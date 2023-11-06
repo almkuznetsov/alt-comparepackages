@@ -18,10 +18,9 @@ set_target_properties(comparepackages PROPERTIES
 
 target_include_directories(comparepackages PRIVATE .)
 target_include_directories(boost INTERFACE /opt/homebrew/include)
-target_include_directories(ssl INTERFACE /opt/homebrew/opt)
-target_include_directories(crypto INTERFACE /opt/homebrew/opt)
+target_include_directories(ssl INTERFACE /opt/homebrew/opt/openssl@3)
 
-target_link_libraries(comparepackages PRIVATE boost ssl crypto)
+target_link_libraries(comparepackages PRIVATE boost ssl)
 
 install(TARGETS comparepackages
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
