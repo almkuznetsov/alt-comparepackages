@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(comparepackages SHARED src/comparepackages.cpp)
 add_library(boost INTERFACE)
+add_library(ssl INTERFACE)
+add_library(crypto INTERFACE)
 
 set_target_properties(comparepackages PROPERTIES
         VERSION ${PROJECT_VERSION}
@@ -16,8 +18,10 @@ set_target_properties(comparepackages PROPERTIES
 
 target_include_directories(comparepackages PRIVATE .)
 target_include_directories(boost INTERFACE /opt/homebrew/include)
+target_include_directories(ssl INTERFACE /opt/homebrew/opt)
+target_include_directories(crypto INTERFACE /opt/homebrew/opt)
 
-target_link_libraries(comparepackages PRIVATE boost)
+target_link_libraries(comparepackages PRIVATE boost ssl crypto)
 
 install(TARGETS comparepackages
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

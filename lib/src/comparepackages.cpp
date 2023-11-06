@@ -5,28 +5,25 @@ namespace http = boost::beast::http;
 boost::json::value getPackages(const std::string& branch, const std::string& arch) {
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::resolver resolver(io_context);
-    boost::beast::tcp_stream stream(io_context);
+    boost::asio::ssl::context ssl_context(boost::asio::ssl::context::sslv23);
 
     const std::string host = "rdb.altlinux.org";
     const std::string target = "/api/export/branch_binary_packages/" + branch + "?arch=" + arch;
 
-    boost::asio::ip::tcp::resolver::results_type results = resolver.resolve(host, "http");
+    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> stream(io_context, ssl_context);
+    boost::asio::ip::tcp::resolver::results_type results = resolver.resolve(host, "https");
 
-    boost::asio::ip::tcp::endpoint endpoint = *results;
-
-    stream.connect(endpoint);
+    boost::asio::connect(stream.next_layer(), results.begin(), results.end());
 
     http::request<http::string_body> request{http::verb::get, target, 11};
     request.set(http::field::host, host);
 
     http::write(stream, request);
-    std::cout << "request " << request << " sent" << std::endl;
+
     http::response<http::string_body> response;
     boost::beast::flat_buffer buffer;
-
     http::read(stream, buffer, response);
-    std::cout << "response " << response << " received" << std::endl;
-    std::cout << "parse begins" << std::endl;
+
     boost::json::value result = boost::json::parse(response.body());
     return result;
 }

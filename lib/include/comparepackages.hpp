@@ -6,6 +6,7 @@
 #include <set>
 #include <fstream>
 #include <boost/asio/io_service.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/asio/strand.hpp>
