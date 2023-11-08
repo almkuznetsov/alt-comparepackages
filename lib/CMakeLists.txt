@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.9)
 project(comparepackages VERSION 1.0.0 DESCRIPTION "lib to compare packages")
 
 include(GNUInstallDirs)
+find_package(CURL REQUIRED)
+find_package(Boost REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,9 +21,8 @@ set_target_properties(comparepackages PROPERTIES
 
 target_include_directories(comparepackages PRIVATE .)
 target_include_directories(boost INTERFACE /opt/homebrew/include)
-target_include_directories(ssl INTERFACE /opt/homebrew/opt/openssl@3)
 
-target_link_libraries(comparepackages PRIVATE boost ssl)
+target_link_libraries(comparepackages PRIVATE boost ssl curl)
 
 install(TARGETS comparepackages
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

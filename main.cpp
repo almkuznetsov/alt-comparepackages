@@ -1,4 +1,5 @@
 #include "lib/include/comparepackages.hpp"
+
 boost::json::value readJsonFile(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -17,10 +18,12 @@ boost::json::value readJsonFile(const std::string& filename) {
     return json;
 }
 
+int main(int argc, char* argv[]) {
+    std::string branch1 = "sisyphus";
+    std::string branch2 = "p10";
 
-int main() {
-    boost::json::value branch1packages = readJsonFile("sisyphus.json");
-    boost::json::value branch2packages = readJsonFile("p10.json");
+    boost::json::value branch1packages = getPackages(branch1);
+    boost::json::value branch2packages = getPackages(branch2);
 
     boost::json::object results = comparePackages(branch1packages, branch2packages);
 
@@ -30,3 +33,4 @@ int main() {
 
     return 0;
 }
+

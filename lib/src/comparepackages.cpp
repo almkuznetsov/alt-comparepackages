@@ -1,32 +1,39 @@
 #include "../include/comparepackages.hpp"
 
-namespace http = boost::beast::http;
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
 
-//boost::json::value getPackages(const std::string& branch, const std::string& arch) {
-//    boost::asio::io_context io_context;
-//    boost::asio::ip::tcp::resolver resolver(io_context);
-//    boost::asio::ssl::context ssl_context(boost::asio::ssl::context::sslv23);
-//
-//    const std::string host = "rdb.altlinux.org";
-//    const std::string target = "/api/export/branch_binary_packages/" + branch + "?arch=" + arch;
-//
-//    boost::asio::ssl::stream<boost::asio::ip::tcp::socket> stream(io_context, ssl_context);
-//    boost::asio::ip::tcp::resolver::results_type results = resolver.resolve(host, "https");
-//
-//    boost::asio::connect(stream.next_layer(), results.begin(), results.end());
-//
-//    http::request<http::string_body> request{http::verb::get, target, 11};
-//    request.set(http::field::host, host);
-//
-//    http::write(stream, request);
-//
-//    http::response<http::string_body> response;
-//    boost::beast::flat_buffer buffer;
-//    http::read(stream, buffer, response);
-//
-//    boost::json::value result = boost::json::parse(response.body());
-//    return result;
-//}
+boost::json::value getPackages(const std::string& branch) {
+    CURL *curl = curl_easy_init();
+    CURLcode res;
+    std::string response_data;
+
+    if (curl) {
+        const std::string host = "https://rdb.altlinux.org";
+        const std::string target = host + "/api/export/branch_binary_packages/" + branch;
+
+        curl_easy_setopt(curl, CURLOPT_URL, target.c_str());
+        curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
+        std::cout << "downloading " << branch << std::endl;
+        res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+        curl_easy_cleanup(curl);
+    } else {
+        std::cerr << "Failed to initialize libcurl." << std::endl;
+    }
+    boost::json::value result = boost::json::parse(response_data);
+    return result;
+}
+
 
 boost::json::object comparePackages(const boost::json::value& branch1, const boost::json::value& branch2) {
     std::set<boost::json::string> archs = {
@@ -35,6 +42,7 @@ boost::json::object comparePackages(const boost::json::value& branch1, const boo
     boost::json::object differences;
 
     for (const boost::json::string& arch : archs) {
+        std::cout << "beginning to parse arch " << arch << std::endl;
         std::set<boost::json::string> branch1packages;
         std::set<boost::json::string> branch2packages;
         for (const boost::json::value &package: branch1.at("packages").as_array()) {
