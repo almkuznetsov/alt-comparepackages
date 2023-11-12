@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/bash
 rm -r build
 cd lib
 rm -r build

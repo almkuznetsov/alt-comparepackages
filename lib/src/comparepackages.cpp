@@ -5,6 +5,34 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
+int compareVersions(const std::string version1, const std::string version2) {
+    int vnum1 = 0, vnum2 = 0;
+
+    for (int i = 0, j = 0; (i < version1.length()
+                            || j < version1.length());) {
+
+        while (i < version1.length() && version1[i] != '.') {
+            vnum1 = vnum1 * 10 + (version1[i] - '0');
+            i++;
+        }
+
+        while (j < version2.length() && version2[j] != '.') {
+            vnum2 = vnum2 * 10 + (version2[j] - '0');
+            j++;
+        }
+
+        if (vnum1 > vnum2)
+            return 1;
+        if (vnum2 > vnum1)
+            return -1;
+
+        vnum1 = vnum2 = 0;
+        i++;
+        j++;
+    }
+    return 0;
+}
+
 boost::json::value getPackages(const std::string& branch) {
     CURL *curl = curl_easy_init();
     CURLcode res;
@@ -43,42 +71,52 @@ boost::json::object comparePackages(const boost::json::value& branch1, const boo
 
     for (const boost::json::string& arch : archs) {
         std::cout << "beginning to parse arch " << arch << std::endl;
-        std::set<boost::json::string> branch1packages;
-        std::set<boost::json::string> branch2packages;
+        boost::json::array branch1packages;
+        boost::json::array branch2packages;
         for (const boost::json::value &package: branch1.at("packages").as_array()) {
             if (package.at("arch").as_string() == arch) {
-                        branch1packages.insert(package.at("name").as_string());
+                branch1packages.emplace_back(package);
                 }
         }
         for (const boost::json::value &package: branch2.at("packages").as_array()) {
             if (package.at("arch").as_string() == arch) {
-                branch2packages.insert(package.at("name").as_string());
+                branch2packages.emplace_back(package);
             }
         }
 
         boost::json::array onlyBranch1packages;
         boost::json::array onlyBranch2packages;
         boost::json::array differentVersionPackages;
-        for (const boost::json::value &package: branch1.at("packages").as_array()) {
+        bool packageFound = false;
+        for (const boost::json::value &package : branch1packages) {
             const boost::json::string name = package.at("name").as_string();
             const boost::json::string version = package.at("version").as_string();
-            if (branch2packages.find(name) == branch2packages.end()) {
-                onlyBranch1packages.emplace_back(package);
-            } else {
-            for (const boost::json::value& other_package : branch2.at("packages").as_array()) {
+            for (const boost::json::value& other_package : branch2packages) {
                 if (other_package.at("name").as_string() == name) {
-                    if (other_package.at("version").as_string() < version) {
+                    const boost::json::string otherVersion = other_package.at("version").as_string();
+                    std::string otherVersionString = otherVersion.c_str();
+                    if (compareVersions(otherVersion.c_str(), version.c_str()) == 1) {
                         differentVersionPackages.emplace_back(package);
                     }
+                    packageFound = true;
                     break;
                 }
             }
-        }
+            if (!packageFound) {
+                onlyBranch1packages.emplace_back(package);
+            }
         }
 
-        for (const boost::json::value &package: branch2.at("packages").as_array()) {
+        packageFound = false;
+        for (const boost::json::value &package : branch2packages) {
             const boost::json::string name = package.at("name").as_string();
-            if (branch1packages.find(name) == branch1packages.end()) {
+            for (const boost::json::value& other_package : branch1packages) {
+                if (other_package.at("name").as_string() == name) {
+                    packageFound = true;
+                    break;
+                }
+            }
+            if (!packageFound) {
                 onlyBranch2packages.emplace_back(package);
             }
         }
