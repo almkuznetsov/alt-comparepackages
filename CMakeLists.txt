@@ -16,7 +16,7 @@ target_link_libraries(main PRIVATE boost)
 if(comparepackages)
     target_link_libraries(main PRIVATE ${comparepackages})
 else()
-    message(FATAL_ERROR "Библиотека libcomparepackages.so.1.0.0 не найдена.")
+    message(FATAL_ERROR "libcomparepackages.so.1.0.0 not found")
 endif()
 
 
