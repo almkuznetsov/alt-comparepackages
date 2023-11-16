@@ -90,13 +90,25 @@ boost::json::object comparePackages(const boost::json::value& branch1, const boo
         bool packageFound = false;
         for (const boost::json::value &package : branch1packages) {
             const boost::json::string name = package.at("name").as_string();
+            const int epoch = package.at("epoch").as_int64();
             const boost::json::string version = package.at("version").as_string();
+            const boost::json::string release = package.at("release").as_string();
             for (const boost::json::value& other_package : branch2packages) {
                 if (other_package.at("name").as_string() == name) {
-                    const boost::json::string otherVersion = other_package.at("version").as_string();
-                    std::string otherVersionString = otherVersion.c_str();
-                    if (compareVersions(otherVersion.c_str(), version.c_str()) == 1) {
+                    const int otherEpoch = other_package.at("epoch").as_int64();
+                    if (epoch > otherEpoch) {
                         differentVersionPackages.emplace_back(package);
+                    } else {
+                        const boost::json::string otherVersion = other_package.at("version").as_string();
+                        if (otherEpoch == epoch && compareVersions(version.c_str(), otherVersion.c_str()) == 1) {
+                            differentVersionPackages.emplace_back(package);
+                        }
+                            else {
+                            const boost::json::string otherRelease = other_package.at("release").as_string();
+                            if (compareVersions(otherVersion.c_str(), version.c_str()) == 0 && compareVersions(release.c_str(), otherRelease.c_str()) == 1) {
+                                differentVersionPackages.emplace_back(package);
+                            }
+                        }
                     }
                     packageFound = true;
                     break;
